@@ -1,0 +1,64 @@
+version: '3.9'
+
+services:
+  # PostgreSQL service on backend
+  database:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  # Adminer service on backend
+  adminer:
+    image: adminer
+    depends_on:
+      - database
+    networks:
+      - backend
+    ports:
+      - "8091:8080"
+
+  # API service on backend
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    networks:
+      - backend
+    volumes:
+      - ./api:/app
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=database
+    depends_on:
+      - database
+
+  # Web app service on backend and frontend
+  web-app:
+    build:
+      context: ./web-app
+      dockerfile: Dockerfile
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "8090:5000"
+    volumes:
+      - ./web-app:/app
+    depends_on:
+      - api
+      - database
+
+networks:
+  backend:
+  frontend:
+
+volumes:
+  postgres_data:
